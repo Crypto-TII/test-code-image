@@ -1,22 +1,21 @@
 import ae.tii.jenkins.pipelines.Constants
 pipeline {
     agent {
-        node {
-            label 'base-agent'
+        kubernetes {
+        inheritFrom 'base-agent'
+        yaml """
+            spec:
+              containers:
+              - name: oc-deployer
+                image: repo.crypto.tii.ae/docker/oc-deployer:latest
+                command:
+                - cat
+                tty: true
+        """
         }
     }
     stages {
         stage('Build new image') {
-            agent {
-                kubernetes {
-                    yaml """
-                        spec:
-                        containers:
-                        - name: oc-deployer
-                        image: repo.crypto.tii.ae/docker/oc-deployer:latest
-                    """
-                }
-            }
             steps {
                 container('oc-deployer') {
                     script {
