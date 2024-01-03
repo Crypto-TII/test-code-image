@@ -6,15 +6,37 @@ pipeline {
         }
     }
     stages {
-        stage('Build and push test-code-image') {
+        stage('Build new image') {
+            agent {
+                kubernetes {
+                    yaml """
+                        spec:
+                        containers:
+                        - name: oc-deployer
+                            image: repo.crypto.tii.ae/docker/oc-deployer:latest
+                    """
+                }
+            }
             steps {
-                script {
-                    BUILT_IMAGE = dockerImage.build("claasp-test-code", "./Dockerfile")
+                container('oc-deployer') {
+                    script {
+                        withFolderProperties {
+                            def secrets = [
+                                [path: "${VAULT_ENGINE}/claasp-deployment", engineVersion: 2, secretValues: [
+                                [envVar: "OC_TOKEN", vaultKey: "OC_TOKEN_KEY"],
+                                ]]
+                            ]
+                            withVault([vaultSecrets: secrets]) {
+                                sh """
+                                oc login --token=${OC_TOKEN} --insecure-skip-tls-verify=true --server=${Constants.OC_SERVER}
+                                oc project claasp-deployment
+                                oc start-build test-code-image --follow
+                                """
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
-
-// git@bitbucket.org:tiicrypto/test-code-image.git
-// BUILT_IMAGE = dockerImage.build("cloud/private-squid-authentication-server", "./dockerfile-deploy", ["--build-arg": "AD_DOMAIN=${AD_DOMAIN}", "--build-arg": "AD_IP_ADDRESS=${AD_IP_ADDRESS}"])
