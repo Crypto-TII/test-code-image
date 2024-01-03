@@ -13,7 +13,7 @@ pipeline {
                         spec:
                         containers:
                         - name: oc-deployer
-                            image: repo.crypto.tii.ae/docker/oc-deployer:latest
+                        image: repo.crypto.tii.ae/docker/oc-deployer:latest
                     """
                 }
             }
